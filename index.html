@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#1e3c72,#2a5298);
+    color:white;
+    text-align:center;
+    padding:40px;
+}
+
+.card {
+    background: rgba(255,255,255,0.1);
+    padding:30px;
+    border-radius:20px;
+    backdrop-filter: blur(10px);
+}
+
+button {
+    padding:15px 25px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    background:#00c6ff;
+    color:white;
+    cursor:pointer;
+    margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h1 id="title">ЗАЛУПА БАРЫКИНА</h1>
+
+<button onclick="changeText()">Сделай макрапрогноз</button>
+
+<canvas id="chart" width="300" height="200"></canvas>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+function changeText(){
+    document.getElementById("title").innerText =
+    "ДААА ТЫ ПОСТАВИЛ 100000 КОИНОВ НА СМЕРТЬ ПЫПЫ";
+}
+
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
+        datasets: [{
+            label: 'Количество прогнозов',
+            data: [3,7,4,9,5,8,6],
+            tension:0.4
+        }]
+    },
+});
+</script>
+
+</body>
+</html>
