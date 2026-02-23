@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIS Market</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto;
+    background:#070e1f;
+    color:white;
+}
+
+.topbar{
+    display:flex;
+    align-items:center;
+    padding:14px 16px;
+    background:#0b132b;
+}
+
+.avatar{width:36px;height:36px;border-radius:50%;margin-right:10px;}
+.username{font-weight:600;}
+.balance{margin-left:auto;background:#111a35;padding:6px 14px;border-radius:20px;font-weight:600;}
+
+.screen{display:none;padding:16px 18px 90px;}
+.active{display:block;}
+
+.card{
+    background:linear-gradient(145deg,#111a35,#0b132b);
+    border-radius:24px;
+    padding:20px;
+    margin-bottom:16px;
+    cursor:pointer;
+}
+
+.tag{font-size:12px;color:#6a7cff;margin-bottom:6px;}
+.question{font-size:17px;font-weight:600;margin-bottom:8px;}
+.percent{float:right;color:#9bb1ff;font-size:26px;}
+.spark{height:36px;width:100%;}
+
+.nav{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    height:70px;
+    background:#0b132b;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    border-top:1px solid rgba(255,255,255,0.05);
+}
+.nav div{opacity:0.6;font-size:12px;cursor:pointer;}
+.nav .on{opacity:1;color:#6a7cff;font-weight:600;}
+
+.betScreen{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#070e1f;
+    padding:20px;
+    z-index:10;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:14px;
+    margin-top:20px;
+    background:linear-gradient(90deg,#6a7cff,#9bb1ff);
+    color:white;font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+<img id="avatar" class="avatar">
+<div id="name" class="username">User</div>
+<div id="balance" class="balance">100000</div>
+</div>
+
+<div id="terminal" class="screen active"></div>
+
+<div id="intel" class="screen">
+<h3>Portfolio Velocity</h3>
+<canvas id="liveChart" height="140"></canvas>
+
+<p>Win ratio: <span id="win">0%</span></p>
+<p>Active links: <span id="active">0</span></p>
+</div>
+
+<div id="ledger" class="screen">
+<h3>Ledger</h3>
+<div id="ledgerList"></div>
+</div>
+
+<div id="hub" class="screen">
+<h3>Leaders</h3>
+<div id="leaders"></div>
+</div>
+
+<div id="settings" class="screen">
+<h3>Settings</h3>
+<img id="avatar2" class="avatar"><br><br>
+<div id="name2"></div>
+</div>
+
+<div id="bet" class="betScreen"></div>
+
+<div class="nav">
+<div class="on" onclick="show('terminal',this)">Terminal</div>
+<div onclick="show('intel',this)">Intel</div>
+<div onclick="show('ledger',this)">Ledger</div>
+<div onclick="show('hub',this)">Hub</div>
+<div onclick="show('settings',this)">Settings</div>
+</div>
+
+<script>
+const tg=window.Telegram.WebApp;
+tg.expand();
+
+let user=tg.initDataUnsafe?.user;
+if(user){
+ name.innerText=user.first_name;
+ name2.innerText=user.first_name;
+ if(user.photo_url){
+  avatar.src=user.photo_url;
+  avatar2.src=user.photo_url;
+ }
+}
+
+let balance=100000;
+let bets=[];
+const balanceEl=document.getElementById("balance");
+balanceEl.innerText=balance;
+
+const markets=[
+{tag:"CRYPTO",q:"Bitcoin $100k by 2026?",p:64},
+{tag:"FINANCE",q:"Fed cuts in March?",p:31},
+{tag:"NEURAL",q:"GPT-6 reveal?",p:48}
+];
+
+const term=document.getElementById("terminal");
+
+markets.forEach((m,i)=>{
+ let card=document.createElement("div");
+ card.className="card";
+ card.innerHTML=`
+ <div class="percent">${m.p}%</div>
+ <div class="tag">${m.tag}</div>
+ <div class="question">${m.q}</div>
+ <canvas class="spark" id="g${i}"></canvas>
+ `;
+ card.addEventListener("click",()=>openBet(m));
+ term.appendChild(card);
+ drawGraph("g"+i);
+});
+
+function drawGraph(id){
+ let c=document.getElementById(id);
+ let ctx=c.getContext("2d");
+ c.width=c.offsetWidth;
+ c.height=36;
+ ctx.strokeStyle="#7f92ff";
+ ctx.beginPath();
+ ctx.moveTo(0,18);
+ for(let i=0;i<10;i++){
+   ctx.lineTo(i*(c.width/9),10+Math.random()*20);
+ }
+ ctx.stroke();
+}
+
+function openBet(m){
+ const bet=document.getElementById("bet");
+ bet.style.display="block";
+ bet.innerHTML=`
+ <div style="opacity:.6;cursor:pointer" onclick="closeBet()">← Back</div>
+ <h3>${m.q}</h3>
+ <h1>${m.p}%</h1>
+ <input type="range" min="1" max="10000" value="100" id="stake">
+ <div>Stake: <span id="stakeVal">100</span></div>
+ <button onclick="placeBet('${m.q}')">Place bet</button>
+ `;
+ stake.oninput=()=>stakeVal.innerText=stake.value;
+}
+
+function closeBet(){
+ bet.style.display="none";
+}
+
+function placeBet(q){
+ let stake=parseInt(document.getElementById("stake").value);
+ if(stake>balance) return alert("No balance");
+
+ balance-=stake;
+ balanceEl.innerText=balance;
+
+ bets.push({q,stake});
+ document.getElementById("active").innerText=bets.length;
+
+ updateLedger();
+ closeBet();
+}
+
+function updateLedger(){
+ ledgerList.innerHTML="";
+ bets.forEach(b=>{
+   let d=document.createElement("div");
+   d.className="card";
+   d.innerText=b.q+" — "+b.stake;
+   ledgerList.appendChild(d);
+ });
+}
+
+const names=["Alpha","Quantum","Nova","Specter","Vector","Orion"];
+leaders.innerHTML=names.map(n=>"<div class='card'>"+n+" — "+(1000+Math.random()*9000|0)+"</div>").join("");
+
+function show(id,el){
+ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+
+ document.querySelectorAll(".nav div").forEach(n=>n.classList.remove("on"));
+ el.classList.add("on");
+
+ // если открыли Intel — рисуем график безопасно
+ if(id==="intel"){
+    setTimeout(drawLiveChart,100);
+ }
+}
+
+/* LIVE RANDOM GRAPH */
+
+const chartCanvas = document.getElementById("liveChart");
+const ctxChart = chartCanvas.getContext("2d");
+
+let points = [60,62,61,64,63,65,64,66];
+
+function drawLiveChart(){
+
+    // если блок ещё невидим — пробуем позже
+    if(chartCanvas.offsetWidth === 0){
+        requestAnimationFrame(drawLiveChart);
+        return;
+    }
+
+    chartCanvas.width = chartCanvas.offsetWidth;
+    chartCanvas.height = 140;
+
+    ctxChart.clearRect(0,0,chartCanvas.width,chartCanvas.height);
+
+    ctxChart.strokeStyle="#6a7cff";
+    ctxChart.lineWidth=2;
+    ctxChart.beginPath();
+
+    for(let i=0;i<points.length;i++){
+        let x=i*(chartCanvas.width/(points.length-1));
+        let y=chartCanvas.height-points[i];
+
+        if(i===0) ctxChart.moveTo(x,y);
+        else ctxChart.lineTo(x,y);
+    }
+
+    ctxChart.stroke();
+}
+
+/* каждые 1.2 сек добавляем новую точку */
+setInterval(()=>{
+    let last = points[points.length-1];
+    let next = last + (Math.random()*10-5);
+
+    next = Math.max(30, Math.min(110,next));
+
+    points.push(next);
+    if(points.length>20) points.shift();
+
+    drawLiveChart();
+},1200);
+
+</script>
+
+</body>
+</html>
